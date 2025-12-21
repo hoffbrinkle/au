@@ -119,17 +119,6 @@ TEST(MagnitudeLabel, IndicatesPresenceOfExposedSlash) {
     EXPECT_THAT(MagnitudeLabel<decltype(-mag<1>() / mag<2>())>::has_exposed_slash, IsTrue());
 }
 
-TEST(Pi, HasCorrectValue) {
-    // This pattern makes sure the test will fail if we _run_ on an architecture without `M_PIl`.
-    // It does, however, permit us to _build_ on such an architecture with no problem.
-
-#ifdef M_PIl
-    EXPECT_THAT(Pi::value(), Eq(M_PIl));
-#else
-    ADD_FAILURE() << "M_PIl not available on this architecture";
-#endif
-}
-
 TEST(Inverse, RaisesToPowerNegativeOne) {
     EXPECT_THAT(inverse(mag<8>()), Eq(mag<1>() / mag<8>()));
     EXPECT_THAT(inverse(-mag<2>()), Eq(-mag<1>() / mag<2>()));
@@ -287,17 +276,6 @@ TEST(GetValue, SupportsNegativePowersOfIntegerBase) {
     constexpr auto m = pow<-3>(mag<2>());
     EXPECT_THAT(get_value<float>(m), SameTypeAndValue(0.125f));
     EXPECT_THAT(get_value<double>(m), SameTypeAndValue(0.125));
-}
-
-TEST(GetValue, PiToThePower1HasCorrectValues) {
-    EXPECT_THAT(get_value<float>(PI), SameTypeAndValue(static_cast<float>(M_PI)));
-    EXPECT_THAT(get_value<double>(PI), SameTypeAndValue(M_PI));
-
-#ifdef M_PIl
-    EXPECT_THAT(get_value<long double>(PI), SameTypeAndValue(M_PIl));
-#else
-    ADD_FAILURE() << "M_PIl not available on this architecture";
-#endif
 }
 
 TEST(GetValue, PiToArbitraryPowerPerformsComputationsInMostAccurateTypeAtCompileTime) {

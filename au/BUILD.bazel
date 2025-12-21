@@ -408,6 +408,17 @@ cc_test(
     ],
 )
 
+cc_test(
+    name = 'manginute_pi_test',
+    size = 'small',
+    srcs = ['magnitude_pi_test.cc'],
+    deps = [
+        ':magnitude',
+        ':testing',
+         "@googletest//:gtest_main",
+    ],
+)
+
 cc_library(
     name = "math",
     hdrs = ["math.hh"],
