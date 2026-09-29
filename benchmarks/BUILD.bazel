@@ -59,6 +59,24 @@ compile_benchmark(
     deps = ["//au:units"],
 )
 
+compile_benchmark(
+    name = "literals_4",
+    srcs = ["literals_4/literals.cc"],
+    deps = ["//au"],
+)
+
+compile_benchmark(
+    name = "literals_16",
+    srcs = ["literals_16/literals.cc"],
+    deps = ["//au"],
+)
+
+compile_benchmark(
+    name = "literals_64",
+    srcs = ["literals_64/literals.cc"],
+    deps = ["//au"],
+)
+
 sh_test(
     name = "all_units_listing_test",
     size = "small",
