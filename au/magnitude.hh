@@ -714,15 +714,25 @@ constexpr int digit_value(char c) {
                                   : -1;
 }
 
-constexpr bool is_decimal_digit(char c) { return c >= '0' && c <= '9'; }
+struct IsDecimalDigit {
+    AU_DEVICE_FUNC constexpr bool operator()(char c) const { return c >= '0' && c <= '9'; }
+};
 
-constexpr bool is_hex_digit(char c) { return digit_value(c) >= 0; }
+struct IsHexDigit {
+    AU_DEVICE_FUNC constexpr bool operator()(char c) const { return digit_value(c) >= 0; }
+};
 
-constexpr bool is_exponent_marker(char c) { return c == 'e' || c == 'E'; }
+struct IsExponentMarker {
+    AU_DEVICE_FUNC constexpr bool operator()(char c) const { return c == 'e' || c == 'E'; }
+};
 
-constexpr bool is_binary_exponent_marker(char c) { return c == 'p' || c == 'P'; }
+struct IsBinaryExponentMarker {
+    AU_DEVICE_FUNC constexpr bool operator()(char c) const { return c == 'p' || c == 'P'; }
+};
 
-constexpr bool never_matches(char) { return false; }
+struct NeverMatches {
+    AU_DEVICE_FUNC constexpr bool operator()(char) const { return false; }
+};
 
 // Whether a `_mag` literal is a floating point literal, i.e., has a decimal point or an exponent.
 // Only meaningful for literals without a `0x`/`0X` prefix, where `e`/`E` are digits.
@@ -730,7 +740,7 @@ template <char... Cs>
 constexpr bool is_decimal_floating_point() {
     constexpr char chars[] = {Cs...};
     for (std::size_t i = 0u; i < sizeof...(Cs); ++i) {
-        if (chars[i] == '.' || is_exponent_marker(chars[i])) {
+        if (chars[i] == '.' || IsExponentMarker{}(chars[i])) {
             return true;
         }
     }
@@ -753,8 +763,8 @@ constexpr int literal_base() {
 // Count the mantissa digits (as identified by `is_digit`) after the `.` in a `_mag` literal,
 // stopping at the first character for which `is_marker` returns true.  For example, `12.34_mag` and
 // `1.23e4_mag` have two decimal places, `0x1.8p0_mag` has one hex place, and `1234_mag` has none.
-template <char... Cs>
-constexpr int count_places(bool (*is_marker)(char), bool (*is_digit)(char)) {
+template <char... Cs, typename IsMarker, typename IsDigit>
+constexpr int count_places(IsMarker is_marker, IsDigit is_digit) {
     constexpr char chars[] = {Cs...};
     int num_places = 0;
     bool after_point = false;
@@ -776,8 +786,8 @@ constexpr int count_places(bool (*is_marker)(char), bool (*is_digit)(char)) {
 // literals and the `p`/`P` exponent of hex literals, since C++ writes both in decimal.  For
 // example, `6.022e23_mag` produces `23`, and `0x1p-3_mag` produces `-3`.  A literal with no marker
 // produces `0`.
-template <char... Cs>
-constexpr std::int64_t parse_exponent(bool (*is_marker)(char)) {
+template <char... Cs, typename IsMarker>
+constexpr std::int64_t parse_exponent(IsMarker is_marker) {
     constexpr char chars[] = {Cs...};
     std::uint64_t exponent = 0u;
     std::int64_t sign = 1;
@@ -802,8 +812,8 @@ constexpr std::int64_t parse_exponent(bool (*is_marker)(char)) {
 // example, `12.34_mag` and `1.234e3_mag` produce `1234` in base 10, and `0x1.Ep4_mag` produces `30`
 // in base 16.  A `0x` prefix needs no special handling: its `0` is a leading zero, and `x` is not a
 // digit.
-template <char... Cs>
-constexpr std::uintmax_t parse_mantissa(bool (*is_marker)(char), int base) {
+template <char... Cs, typename IsMarker>
+constexpr std::uintmax_t parse_mantissa(IsMarker is_marker, int base) {
     constexpr char chars[] = {Cs...};
     std::uintmax_t result = 0u;
     for (std::size_t i = 0u; i < sizeof...(Cs); ++i) {
@@ -825,9 +835,9 @@ struct MagLiteralParser;
 template <char... Cs>
 struct MagLiteralParser<10, Cs...> {
     AU_DEVICE_FUNC static constexpr auto value() {
-        return mag<parse_mantissa<Cs...>(is_exponent_marker, 10)>() *
-               pow<parse_exponent<Cs...>(is_exponent_marker) -
-                   count_places<Cs...>(is_exponent_marker, is_decimal_digit)>(mag<10>());
+        return mag<parse_mantissa<Cs...>(IsExponentMarker{}, 10)>() *
+               pow<parse_exponent<Cs...>(IsExponentMarker{}) -
+                   count_places<Cs...>(IsExponentMarker{}, IsDecimalDigit{})>(mag<10>());
     }
 };
 
@@ -835,23 +845,23 @@ template <char... Cs>
 struct MagLiteralParser<16, Cs...> {
     AU_DEVICE_FUNC static constexpr auto value() {
         // Each hex place divides by 16, i.e., by 2^4.
-        return mag<parse_mantissa<Cs...>(is_binary_exponent_marker, 16)>() *
-               pow<parse_exponent<Cs...>(is_binary_exponent_marker) -
-                   4 * count_places<Cs...>(is_binary_exponent_marker, is_hex_digit)>(mag<2>());
+        return mag<parse_mantissa<Cs...>(IsBinaryExponentMarker{}, 16)>() *
+               pow<parse_exponent<Cs...>(IsBinaryExponentMarker{}) -
+                   4 * count_places<Cs...>(IsBinaryExponentMarker{}, IsHexDigit{})>(mag<2>());
     }
 };
 
 template <char... Cs>
 struct MagLiteralParser<2, Cs...> {
     AU_DEVICE_FUNC static constexpr auto value() {
-        return mag<parse_mantissa<Cs...>(never_matches, 2)>();
+        return mag<parse_mantissa<Cs...>(NeverMatches{}, 2)>();
     }
 };
 
 template <char... Cs>
 struct MagLiteralParser<8, Cs...> {
     AU_DEVICE_FUNC static constexpr auto value() {
-        return mag<parse_mantissa<Cs...>(never_matches, 8)>();
+        return mag<parse_mantissa<Cs...>(NeverMatches{}, 8)>();
     }
 };
 
@@ -867,9 +877,11 @@ struct MagLiteralParser<8, Cs...> {
 template <int Base, char... Cs>
 constexpr bool all_valid_literal_chars() {
     constexpr char chars[] = {Cs..., '\0'};
-    bool (*const is_marker)(char) = Base == 10   ? is_exponent_marker
-                                    : Base == 16 ? is_binary_exponent_marker
-                                                 : never_matches;
+    using IsMarker = std::conditional_t<
+        Base == 10,
+        IsExponentMarker,
+        std::conditional_t<Base == 16, IsBinaryExponentMarker, NeverMatches>>;
+    const IsMarker is_marker{};
     std::size_t i = Base == 16 || Base == 2 ? 2u : 0u;
     std::size_t num_digits = 0u;
     std::size_t num_points = 0u;
@@ -897,7 +909,7 @@ constexpr bool all_valid_literal_chars() {
     }
     std::size_t num_exponent_digits = 0u;
     for (; i < sizeof...(Cs); ++i) {
-        if (is_decimal_digit(chars[i])) {
+        if (IsDecimalDigit{}(chars[i])) {
             ++num_exponent_digits;
         } else if (chars[i] != '\'') {
             return false;
