@@ -12,70 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@au_pip_deps//:requirements.bzl", "requirement")
 load("@rules_cc//cc:defs.bzl", "cc_library")
-load("@rules_python//python:defs.bzl", "py_binary")
-load("@rules_python//python:pip.bzl", "compile_pip_requirements")
+
+# Au's consumers load this package whenever one of their targets refers to a file in it, so it may
+# only load rules they are guaranteed to have: native rules, and `rules_cc`.  Anything that needs a
+# `dev_dependency` (`rules_python`, `rules_shell`, our pip hub, etc.) belongs in another package,
+# such as`//tools/docs` or `//release`.
 
 # The README quotes code from `//examples`, and `//examples:readme_snippets_test` checks that those
 # copies still match their source.
 exports_files(["README.md"])
 
-# This rule adds a convenient way to update the requirements file.
-compile_pip_requirements(
-    name = "requirements",
-    requirements_in = "requirements.in",
-    requirements_txt = "requirements_lock.txt",
+exports_files(
+    [
+        "requirements.in",
+        "requirements_lock.txt",
+    ],
+    visibility = ["//tools/docs:__pkg__"],
 )
 
-py_binary(
-    name = "update_docs",
-    srcs = ["update_docs.py"],
-    data = [
-        "mkdocs.yml",
-        ":au_all_units_hh",
-        ":au_all_units_noio_hh",
-        ":au_all_units_stdformat_hh",
-        ":au_all_units_stdformat_noio_hh",
-        ":au_hh",
-        ":au_noio_hh",
-        ":au_stdformat_hh",
-        ":au_stdformat_noio_hh",
-        "//examples:doc_sources",
-    ] + glob([
+# The doc website's sources.  This allows us a glob from the root of the
+# workspace.
+filegroup(
+    name = "doc_site_sources",
+    srcs = ["mkdocs.yml"] + glob([
         "docs/**",
         "doc_snippets/**",
     ]),
-    deps = [
-        requirement("mkdocs"),
-        requirement("mkdocs-material"),
-    ],
-)
-
-py_binary(
-    name = "mike",
-    srcs = ["mike_bin.py"],
-    data = [
-        "mkdocs.yml",
-        ":au_all_units_hh",
-        ":au_all_units_noio_hh",
-        ":au_all_units_stdformat_hh",
-        ":au_all_units_stdformat_noio_hh",
-        ":au_hh",
-        ":au_noio_hh",
-        ":au_stdformat_hh",
-        ":au_stdformat_noio_hh",
-    ] + glob([
-        "docs/**",
-        "doc_snippets/**",
-    ]),
-    main = "mike_bin.py",
-    deps = [
-        ":update_docs",
-        requirement("mike"),
-        requirement("mkdocs"),
-        requirement("mkdocs-material"),
-    ],
+    visibility = ["//tools/docs:__pkg__"],
 )
 
 BASE_UNITS = [
@@ -113,7 +77,10 @@ genrule(
     ),
     stamp = True,
     tools = ["tools/bin/make-single-file"],
-    visibility = ["//release:__pkg__"],
+    visibility = [
+        "//release:__pkg__",
+        "//tools/docs:__pkg__",
+    ],
 )
 
 cc_library(
@@ -138,7 +105,10 @@ genrule(
     ),
     stamp = True,
     tools = ["tools/bin/make-single-file"],
-    visibility = ["//release:__pkg__"],
+    visibility = [
+        "//release:__pkg__",
+        "//tools/docs:__pkg__",
+    ],
 )
 
 cc_library(
@@ -163,7 +133,10 @@ genrule(
     ),
     stamp = True,
     tools = ["tools/bin/make-single-file"],
-    visibility = ["//release:__pkg__"],
+    visibility = [
+        "//release:__pkg__",
+        "//tools/docs:__pkg__",
+    ],
 )
 
 cc_library(
@@ -188,7 +161,10 @@ genrule(
     ),
     stamp = True,
     tools = ["tools/bin/make-single-file"],
-    visibility = ["//release:__pkg__"],
+    visibility = [
+        "//release:__pkg__",
+        "//tools/docs:__pkg__",
+    ],
 )
 
 cc_library(
@@ -213,7 +189,10 @@ genrule(
     ),
     stamp = True,
     tools = ["tools/bin/make-single-file"],
-    visibility = ["//release:__pkg__"],
+    visibility = [
+        "//release:__pkg__",
+        "//tools/docs:__pkg__",
+    ],
 )
 
 # TODO(#508): no `cc_library`, because we don't yet have a toolchain that supports `std::format`.
@@ -234,7 +213,10 @@ genrule(
     ),
     stamp = True,
     tools = ["tools/bin/make-single-file"],
-    visibility = ["//release:__pkg__"],
+    visibility = [
+        "//release:__pkg__",
+        "//tools/docs:__pkg__",
+    ],
 )
 
 # TODO(#508): no `cc_library`, because we don't yet have a toolchain that supports `std::format`.
@@ -255,7 +237,10 @@ genrule(
     ),
     stamp = True,
     tools = ["tools/bin/make-single-file"],
-    visibility = ["//release:__pkg__"],
+    visibility = [
+        "//release:__pkg__",
+        "//tools/docs:__pkg__",
+    ],
 )
 
 # TODO(#508): no `cc_library`, because we don't yet have a toolchain that supports `std::format`.
@@ -276,7 +261,10 @@ genrule(
     ),
     stamp = True,
     tools = ["tools/bin/make-single-file"],
-    visibility = ["//release:__pkg__"],
+    visibility = [
+        "//release:__pkg__",
+        "//tools/docs:__pkg__",
+    ],
 )
 
 # TODO(#508): no `cc_library`, because we don't yet have a toolchain that supports `std::format`.
