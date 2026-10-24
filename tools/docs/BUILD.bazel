@@ -17,7 +17,7 @@ Tooling for the doc website.
 """
 
 load("@au_pip_deps//:requirements.bzl", "requirement")
-load("@rules_python//python:defs.bzl", "py_binary")
+load("@rules_python//python:defs.bzl", "py_binary", "py_test")
 load("@rules_python//python:pip.bzl", "compile_pip_requirements")
 
 # This rule adds a convenient way to update the requirements file.
@@ -25,6 +25,25 @@ compile_pip_requirements(
     name = "requirements",
     requirements_in = "//:requirements.in",
     requirements_txt = "//:requirements_lock.txt",
+)
+
+# Everything `mkdocs` reads while building the site, plus the packages the publishing hook copies in.
+filegroup(
+    name = "site_inputs",
+    srcs = [
+        "//:mkdocs.yml",
+        "//doc_snippets:snippets",
+        "//docs:doc_sources",
+        "//examples:doc_sources",
+        "//release:au_all_units_hh",
+        "//release:au_all_units_noio_hh",
+        "//release:au_all_units_stdformat_hh",
+        "//release:au_all_units_stdformat_noio_hh",
+        "//release:au_hh",
+        "//release:au_noio_hh",
+        "//release:au_stdformat_hh",
+        "//release:au_stdformat_noio_hh",
+    ],
 )
 
 # Both binaries run from the root of their runfiles, which is where `mkdocs` looks for
@@ -35,21 +54,7 @@ py_binary(
         "publish_single_file_packages.py",
         "update_docs.py",
     ],
-    data = [
-        # `mkdocs` looks for this in the root of its runfiles, so it stays in the root package.
-        "//:mkdocs.yml",
-        "//release:au_all_units_hh",
-        "//release:au_all_units_noio_hh",
-        "//release:au_all_units_stdformat_hh",
-        "//release:au_all_units_stdformat_noio_hh",
-        "//release:au_hh",
-        "//release:au_noio_hh",
-        "//release:au_stdformat_hh",
-        "//release:au_stdformat_noio_hh",
-        "//docs:doc_sources",
-        "//doc_snippets:snippets",
-        "//examples:doc_sources",
-    ],
+    data = [":site_inputs"],
     deps = [
         requirement("mkdocs"),
         requirement("mkdocs-material"),
@@ -59,21 +64,28 @@ py_binary(
 py_binary(
     name = "mike",
     srcs = ["mike_bin.py"],
-    data = [
-        "//docs:doc_sources",
-        "//release:au_all_units_hh",
-        "//release:au_all_units_noio_hh",
-        "//release:au_all_units_stdformat_hh",
-        "//release:au_all_units_stdformat_noio_hh",
-        "//release:au_hh",
-        "//release:au_noio_hh",
-        "//release:au_stdformat_hh",
-        "//release:au_stdformat_noio_hh",
-    ],
+    data = [":site_inputs"],
     main = "mike_bin.py",
     deps = [
         ":update_docs",
         requirement("mike"),
+        requirement("mkdocs"),
+        requirement("mkdocs-material"),
+    ],
+)
+
+# The packages are copied into the site by a `mkdocs` hook, so nothing else would notice if that
+# stopped working: the site would build and deploy without them.
+py_test(
+    name = "publish_single_file_packages_test",
+    size = "small",
+    srcs = [
+        "publish_single_file_packages.py",
+        "publish_single_file_packages_test.py",
+    ],
+    data = [":site_inputs"],
+    main = "publish_single_file_packages_test.py",
+    deps = [
         requirement("mkdocs"),
         requirement("mkdocs-material"),
     ],
