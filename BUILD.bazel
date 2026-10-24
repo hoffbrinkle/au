@@ -35,8 +35,8 @@ exports_files(
     visibility = ["//tools/docs:__pkg__"],
 )
 
-# The single-file genrules in `//docs` run this script.
+# The single-file genrules in `//release` run this script.
 exports_files(
     ["tools/bin/make-single-file"],
-    visibility = ["//docs:__pkg__"],
+    visibility = ["//release:__pkg__"],
 )
