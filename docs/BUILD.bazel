@@ -1,0 +1,274 @@
+# Copyright 2022 Aurora Operations, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+The doc website's sources, and the single-file packages published on it.
+
+`mkdocs` builds `docs/` into the site (it is the default `docs_dir`), which is why the
+single-file packages are generated here: they are served from the site root, and `docs/install.md`
+links to them as `../au.hh` and so on.
+"""
+
+BASE_UNITS = [
+    "meters",
+    "seconds",
+    "grams",
+    "kelvins",
+    "amperes",
+    "moles",
+    "candelas",
+    "radians",
+    "bits",
+    "unos",
+]
+
+BASE_UNIT_STRING = " ".join(BASE_UNITS)
+
+GIT_ID_CMD = "cat bazel-out/stable-status.txt | grep STABLE_GIT_ID | sed 's/STABLE_GIT_ID \\(.*\\)/\\1/' | tr -d '\\n'"
+
+CMD_ROOT = "$(location //:tools/bin/make-single-file) {extra_opts} {units} {all_literals} {all_constants} --version-id $$({id_cmd}) > $(OUTS)"
+
+################################################################################
+# Release single-file package `au.hh`
+
+genrule(
+    name = "au_hh",
+    srcs = ["//au:headers"],
+    outs = ["au.hh"],
+    cmd = CMD_ROOT.format(
+        all_constants = "",
+        all_literals = "",
+        extra_opts = "",
+        id_cmd = GIT_ID_CMD,
+        units = "--units " + BASE_UNIT_STRING,
+    ),
+    stamp = True,
+    tools = ["//:tools/bin/make-single-file"],
+    visibility = [
+        "//release:__pkg__",
+        "//tools/docs:__pkg__",
+    ],
+)
+
+cc_library(
+    name = "au_hh_lib",
+    hdrs = ["au.hh"],
+    visibility = ["//release:__pkg__"],
+)
+
+################################################################################
+# Release single-file package `au_noio.hh`
+
+genrule(
+    name = "au_noio_hh",
+    srcs = ["//au:headers"],
+    outs = ["au_noio.hh"],
+    cmd = CMD_ROOT.format(
+        all_constants = "",
+        all_literals = "",
+        extra_opts = "--noio",
+        id_cmd = GIT_ID_CMD,
+        units = "--units " + BASE_UNIT_STRING,
+    ),
+    stamp = True,
+    tools = ["//:tools/bin/make-single-file"],
+    visibility = [
+        "//release:__pkg__",
+        "//tools/docs:__pkg__",
+    ],
+)
+
+cc_library(
+    name = "au_noio_hh_lib",
+    hdrs = ["au_noio.hh"],
+    visibility = ["//release:__pkg__"],
+)
+
+################################################################################
+# Release single-file package `au_all_units.hh`
+
+genrule(
+    name = "au_all_units_hh",
+    srcs = ["//au:headers"],
+    outs = ["au_all_units.hh"],
+    cmd = CMD_ROOT.format(
+        all_constants = "--all-constants",
+        all_literals = "--all-literals",
+        extra_opts = "",
+        id_cmd = GIT_ID_CMD,
+        units = "--all-units",
+    ),
+    stamp = True,
+    tools = ["//:tools/bin/make-single-file"],
+    visibility = [
+        "//release:__pkg__",
+        "//tools/docs:__pkg__",
+    ],
+)
+
+cc_library(
+    name = "au_all_units_hh_lib",
+    hdrs = ["au_all_units.hh"],
+    visibility = ["//release:__pkg__"],
+)
+
+################################################################################
+# Release single-file package `au_all_units_noio.hh`
+
+genrule(
+    name = "au_all_units_noio_hh",
+    srcs = ["//au:headers"],
+    outs = ["au_all_units_noio.hh"],
+    cmd = CMD_ROOT.format(
+        all_constants = "--all-constants",
+        all_literals = "--all-literals",
+        extra_opts = "--noio",
+        id_cmd = GIT_ID_CMD,
+        units = "--all-units",
+    ),
+    stamp = True,
+    tools = ["//:tools/bin/make-single-file"],
+    visibility = [
+        "//release:__pkg__",
+        "//tools/docs:__pkg__",
+    ],
+)
+
+cc_library(
+    name = "au_all_units_noio_hh_lib",
+    hdrs = ["au_all_units_noio.hh"],
+    visibility = ["//release:__pkg__"],
+)
+
+################################################################################
+# Release single-file package `au_stdformat.hh`
+
+genrule(
+    name = "au_stdformat_hh",
+    srcs = ["//au:headers"],
+    outs = ["au_stdformat.hh"],
+    cmd = CMD_ROOT.format(
+        all_constants = "",
+        all_literals = "",
+        extra_opts = "--std-format",
+        id_cmd = GIT_ID_CMD,
+        units = "--units " + BASE_UNIT_STRING,
+    ),
+    stamp = True,
+    tools = ["//:tools/bin/make-single-file"],
+    visibility = [
+        "//release:__pkg__",
+        "//tools/docs:__pkg__",
+    ],
+)
+
+# TODO(#508): no `cc_library`, because we don't yet have a toolchain that supports `std::format`.
+
+################################################################################
+# Release single-file package `au_stdformat_noio.hh`
+
+genrule(
+    name = "au_stdformat_noio_hh",
+    srcs = ["//au:headers"],
+    outs = ["au_stdformat_noio.hh"],
+    cmd = CMD_ROOT.format(
+        all_constants = "",
+        all_literals = "",
+        extra_opts = "--std-format --noio",
+        id_cmd = GIT_ID_CMD,
+        units = "--units " + BASE_UNIT_STRING,
+    ),
+    stamp = True,
+    tools = ["//:tools/bin/make-single-file"],
+    visibility = [
+        "//release:__pkg__",
+        "//tools/docs:__pkg__",
+    ],
+)
+
+# TODO(#508): no `cc_library`, because we don't yet have a toolchain that supports `std::format`.
+
+################################################################################
+# Release single-file package `au_all_units_stdformat.hh`
+
+genrule(
+    name = "au_all_units_stdformat_hh",
+    srcs = ["//au:headers"],
+    outs = ["au_all_units_stdformat.hh"],
+    cmd = CMD_ROOT.format(
+        all_constants = "--all-constants",
+        all_literals = "--all-literals",
+        extra_opts = "--std-format",
+        id_cmd = GIT_ID_CMD,
+        units = "--all-units",
+    ),
+    stamp = True,
+    tools = ["//:tools/bin/make-single-file"],
+    visibility = [
+        "//release:__pkg__",
+        "//tools/docs:__pkg__",
+    ],
+)
+
+# TODO(#508): no `cc_library`, because we don't yet have a toolchain that supports `std::format`.
+
+################################################################################
+# Release single-file package `au_all_units_stdformat_noio.hh`
+
+genrule(
+    name = "au_all_units_stdformat_noio_hh",
+    srcs = ["//au:headers"],
+    outs = ["au_all_units_stdformat_noio.hh"],
+    cmd = CMD_ROOT.format(
+        all_constants = "--all-constants",
+        all_literals = "--all-literals",
+        extra_opts = "--std-format --noio",
+        id_cmd = GIT_ID_CMD,
+        units = "--all-units",
+    ),
+    stamp = True,
+    tools = ["//:tools/bin/make-single-file"],
+    visibility = [
+        "//release:__pkg__",
+        "//tools/docs:__pkg__",
+    ],
+)
+
+# TODO(#508): no `cc_library`, because we don't yet have a toolchain that supports `std::format`.
+
+################################################################################
+# The doc website's sources, for `//tools/docs`, which can't glob them from there.
+
+# Glob what we need while avoiding a recursive glob.
+filegroup(
+    name = "doc_sources",
+    srcs = glob([
+        "*.css",
+        "*.md",
+        "alternatives/*.md",
+        "assets/*",
+        "discussion/*.md",
+        "discussion/concepts/*.md",
+        "discussion/idioms/*.md",
+        "discussion/implementation/*.md",
+        "examples/*.md",
+        "howto/*.md",
+        "howto/interop/*.md",
+        "reference/*.md",
+        "reference/detail/*.md",
+        "tutorial/*.md",
+        "tutorial/exercise/*.md",
+    ]),
+    visibility = ["//tools/docs:__pkg__"],
+)

@@ -913,6 +913,7 @@ filegroup(
     visibility = [
         "//:__pkg__",
         "//benchmarks:__pkg__",
+        "//docs:__pkg__",
     ],
 )
 
